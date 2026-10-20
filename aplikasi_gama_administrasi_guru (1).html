@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gama Administrasi Guru - SDIT Gema Insan Mandiri</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK v8 (App, Auth, Database) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="bg-emerald-700 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-emerald-800/60 rounded-lg border border-emerald-500/30">
+                    <i class="fa-solid fa-graduation-cap text-2xl text-emerald-200"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-bold tracking-tight">Gama Administrasi Guru</h1>
+                    <p class="text-xs text-emerald-200">SDIT Gema Insan Mandiri Jakarta Utara</p>
+                </div>
+            </div>
+            <div id="user-info" class="hidden flex items-center space-x-3 sm:space-x-4">
+                <span id="welcome-user" class="text-xs sm:text-sm font-medium bg-emerald-800/80 px-3 py-1.5 rounded-full border border-emerald-600"></span>
+                <button onclick="logout()" class="bg-rose-500 hover:bg-rose-600 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition flex items-center shadow-sm">
+                    <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Keluar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- SECTION: LOGIN (Firebase Auth) -->
+        <section id="login-section" class="max-w-md mx-auto my-8 sm:my-12 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden transition-all duration-300">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white text-center">
+                <div class="inline-flex items-center justify-center w-14 h-14 bg-white/10 rounded-2xl mb-3 backdrop-blur-sm border border-white/20">
+                    <i class="fa-solid fa-user-shield text-2xl text-emerald-100"></i>
+                </div>
+                <h2 class="text-xl font-bold">Masuk Sistem Administrasi</h2>
+                <p class="text-xs text-emerald-100/80 mt-1">Gunakan Email & Password yang telah didaftarkan</p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleAuthLogin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Email Akun Firebase</label>
+                    <div class="relative">
+                        <input type="email" id="login-email" required placeholder="admin@gama.sch.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                        <i class="fa-solid fa-envelope absolute right-3.5 top-3.5 text-slate-400 text-sm"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                        <i class="fa-solid fa-key absolute right-3.5 top-3.5 text-slate-400 text-sm"></i>
+                    </div>
+                </div>
+
+                <div id="login-error" class="hidden p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-exclamation text-sm flex-shrink-0"></i>
+                    <span id="login-error-msg">Email atau password salah.</span>
+                </div>
+
+                <button type="submit" id="btn-login" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 active:scale-[0.99] transition duration-150 text-sm flex items-center justify-center">
+                    <span>Masuk Sekarang</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1.5"></i>
+                </button>
+            </form>
+        </section>
+
+        <!-- SECTION: DASHBOARD ADMIN -->
+        <section id="admin-dashboard" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                        <i class="fa-solid fa-user-gear text-emerald-600 mr-2.5"></i> Panel Utama Administrator
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Kelola data tenaga pendidik dan pantau kelengkapan dokumen administrasi</p>
+                </div>
+                <button onclick="openAddTeacherModal()" class="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-sm shadow-emerald-600/20 transition active:scale-[0.98]">
+                    <i class="fa-solid fa-user-plus mr-2"></i> Tambah Guru & Mapel
+                </button>
+            </div>
+
+            <!-- Tabel Data Guru -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Daftar Guru & Penugasan Mengajar</h3>
+                    <span id="teacher-count-badge" class="bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2.5 py-0.5 rounded-full">0 Guru</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                                <th class="py-3 px-4 w-12 text-center">No</th>
+                                <th class="py-3 px-4">Nama Guru & Gelar</th>
+                                <th class="py-3 px-4">NIY</th>
+                                <th class="py-3 px-4">Mata Pelajaran</th>
+                                <th class="py-3 px-4">Kelas / Fase</th>
+                                <th class="py-3 px-4 text-center w-24">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-teacher-table-body" class="text-sm divide-y divide-slate-100">
+                            <!-- Dynamic items -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Monitoring Dokumen -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+                <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center">
+                    <i class="fa-solid fa-folder-tree text-emerald-600 mr-2"></i> Realtime Monitoring Unggahan Administrasi Guru
+                </h3>
+                <div id="admin-monitoring-list" class="space-y-2.5">
+                    <!-- Dynamic monitoring list -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: DASHBOARD GURU -->
+        <section id="teacher-dashboard" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-emerald-600">
+                <h2 id="teacher-welcome-title" class="text-2xl font-bold text-slate-800">Selamat Datang</h2>
+                <p id="teacher-info-subtitle" class="text-xs sm:text-sm text-slate-500 mt-1"></p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Generator Dokumen -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-file-signature text-emerald-600 mr-2"></i> Perangkat Pembelajaran Otomatis
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Pilih format dokumen untuk generate otomatis sesuai penugasan Anda:</p>
+                    </div>
+                    
+                    <div class="space-y-2.5">
+                        <button onclick="generateDoc('Cover Depan Administrasi')" class="w-full text-left bg-slate-50 hover:bg-emerald-50/60 p-3.5 rounded-xl border border-slate-200/80 hover:border-emerald-300 text-sm flex items-center justify-between transition group">
+                            <span class="font-medium text-slate-700 group-hover:text-emerald-800"><i class="fa-solid fa-book-bookmark text-emerald-600 mr-2.5"></i> 00. Cover Depan Administrasi</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:translate-x-0.5 transition"></i>
+                        </button>
+                        <button onclick="generateDoc('Capaian & Tujuan Pembelajaran (CP & TP)')" class="w-full text-left bg-slate-50 hover:bg-emerald-50/60 p-3.5 rounded-xl border border-slate-200/80 hover:border-emerald-300 text-sm flex items-center justify-between transition group">
+                            <span class="font-medium text-slate-700 group-hover:text-emerald-800"><i class="fa-solid fa-bullseye text-emerald-600 mr-2.5"></i> Capaian & Tujuan Pembelajaran (CP & TP)</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:translate-x-0.5 transition"></i>
+                        </button>
+                        <button onclick="generateDoc('Program Tahunan & Semester')" class="w-full text-left bg-slate-50 hover:bg-emerald-50/60 p-3.5 rounded-xl border border-slate-200/80 hover:border-emerald-300 text-sm flex items-center justify-between transition group">
+                            <span class="font-medium text-slate-700 group-hover:text-emerald-800"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2.5"></i> Program Tahunan (PROTA) & Semester (PROMES)</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:translate-x-0.5 transition"></i>
+                        </button>
+                        <button onclick="generateDoc('KKTP & Jam Belajar Efektif')" class="w-full text-left bg-slate-50 hover:bg-emerald-50/60 p-3.5 rounded-xl border border-slate-200/80 hover:border-emerald-300 text-sm flex items-center justify-between transition group">
+                            <span class="font-medium text-slate-700 group-hover:text-emerald-800"><i class="fa-solid fa-square-check text-emerald-600 mr-2.5"></i> KKTP & Analisis Jam Belajar Efektif (JBE)</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:translate-x-0.5 transition"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Unggah Dokumen -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-emerald-600 mr-2"></i> Unggah Dokumen / Laporan
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Kirimkan file bukti fisik yang disetujui Kepala Sekolah:</p>
+                    </div>
+
+                    <form id="upload-form" onsubmit="handleUploadDoc(event)" class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Jenis Dokumen</label>
+                            <select id="doc-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="Modul Ajar / RPP">Modul Ajar / RPP</option>
+                                <option value="Absen & Daftar Nilai">Absen & Daftar Nilai Siswa</option>
+                                <option value="Jurnal Mengajar Guru">Jurnal Mengajar Guru</option>
+                                <option value="Laporan Semester Lengkap">Laporan Semester Lengkap</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Pilih File Laporan</label>
+                            <input type="file" id="doc-file" required class="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-600 bg-slate-50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm transition shadow-sm">
+                            <i class="fa-solid fa-paper-plane mr-1.5"></i> Simpan Unggahan
+                        </button>
+                    </form>
+
+                    <div class="pt-3 border-t border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Riwayat Unggahan Anda:</h4>
+                        <div id="teacher-uploaded-list" class="space-y-2 text-xs text-slate-600 max-h-36 overflow-y-auto">
+                            <!-- Dynamic history -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: TAMBAH GURU -->
+    <div id="teacher-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800">Tambah Data Guru & Mapel</h3>
+                <button onclick="closeAddTeacherModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="add-teacher-form" onsubmit="saveTeacher(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Email Akun Guru (Firebase Auth)</label>
+                    <input type="email" id="new-email" required placeholder="guru@gama.sch.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nama Lengkap & Gelar</label>
+                    <input type="text" id="new-name" required placeholder="Suci Safina Suhasana, S.Kom." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">NIY</label>
+                    <input type="text" id="new-niy" required placeholder="005.054.024" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Mata Pelajaran</label>
+                    <input type="text" id="new-subject" required placeholder="Informatika" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Kelas / Fase</label>
+                    <input type="text" id="new-class" required placeholder="Kelas IV / Fase B" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="flex justify-end space-x-2 pt-3">
+                    <button type="button" onclick="closeAddTeacherModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold transition">Batal</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow-sm">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200/80 text-center py-4 text-xs text-slate-400 mt-auto">
+        &copy; 2026 SDIT Gema Insan Mandiri - Sistem Administrasi Perangkat Pembelajaran
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC WITH FIREBASE AUTH -->
+    <script>
+        // Konfigurasi Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAd8WGMUUwIbx_mokzirpdT1xy30fiLjdk",
+            authDomain: "gamamodulajar.firebaseapp.com",
+            projectId: "gamamodulajar",
+            storageBucket: "gamamodulajar.firebasestorage.app",
+            messagingSenderId: "908925699799",
+            appId: "1:908925699799:web:b80edc4a84aa8faa16d292",
+            measurementId: "G-J7PVK23KDW"
+        };
+
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        let currentUserData = null;
+
+        // Monitor Status Autentikasi Firebase User
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Pengguna terautentikasi oleh Firebase Auth
+                const email = user.email.toLowerCase();
+                
+                // Cek apakah akun adalah Admin atau Guru
+                db.ref('teachers').once('value', snapshot => {
+                    const teachers = snapshot.val() || {};
+                    let teacherMatch = null;
+                    let teacherKey = null;
+
+                    Object.keys(teachers).forEach(key => {
+                        if (teachers[key].email && teachers[key].email.toLowerCase() === email) {
+                            teacherMatch = teachers[key];
+                            teacherKey = key;
+                        }
+                    });
+
+                    if (teacherMatch) {
+                        // Akun Guru
+                        currentUserData = { role: 'guru', id: teacherKey, email: email, ...teacherMatch };
+                    } else {
+                        // Akun Administrator
+                        currentUserData = { role: 'admin', email: email, name: user.displayName || 'Administrator' };
+                    }
+                    showDashboard();
+                });
+            } else {
+                // Tidak ada pengguna yang login
+                currentUserData = null;
+                showLoginSection();
+            }
+        });
+
+        // Handler Login dengan Email & Password dari Firebase Console
+        function handleAuthLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errBox = document.getElementById('login-error');
+            const errMsg = document.getElementById('login-error-msg');
+            const btnLogin = document.getElementById('btn-login');
+
+            errBox.classList.add('hidden');
+            btnLogin.innerText = "Memverifikasi...";
+            btnLogin.disabled = true;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    btnLogin.innerHTML = `<span>Masuk Sekarang</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1.5"></i>`;
+                    btnLogin.disabled = false;
+                })
+                .catch((error) => {
+                    btnLogin.innerHTML = `<span>Masuk Sekarang</span> <i class="fa-solid fa-arrow-right-to-bracket ml-1.5"></i>`;
+                    btnLogin.disabled = false;
+                    errBox.classList.remove('hidden');
+                    
+                    if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                        errMsg.innerText = "Email atau password yang Anda masukkan salah.";
+                    } else if (error.code === 'auth/invalid-email') {
+                        errMsg.innerText = "Format email tidak valid.";
+                    } else {
+                        errMsg.innerText = error.message;
+                    }
+                });
+        }
+
+        // Tampilkan Tampilan Dashboard
+        function showDashboard() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('welcome-user').innerText = `${currentUserData.name || currentUserData.email}`;
+
+            if (currentUserData.role === 'admin') {
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('teacher-dashboard').classList.add('hidden');
+                loadAdminData();
+            } else {
+                document.getElementById('teacher-dashboard').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                document.getElementById('teacher-welcome-title').innerText = `Selamat Datang, ${currentUserData.name}`;
+                document.getElementById('teacher-info-subtitle').innerText = `Mapel: ${currentUserData.subject} | Kelas: ${currentUserData.classRoom} | NIY: ${currentUserData.niy}`;
+                loadTeacherSubmissions();
+            }
+        }
+
+        function showLoginSection() {
+            document.getElementById('user-info').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('teacher-dashboard').classList.add('hidden');
+            document.getElementById('login-section').classList.remove('hidden');
+        }
+
+        // Logout
+        function logout() {
+            auth.signOut().then(() => {
+                showLoginSection();
+            });
+        }
+
+        // Modal Handlers
+        function openAddTeacherModal() {
+            document.getElementById('teacher-modal').classList.remove('hidden');
+        }
+        function closeAddTeacherModal() {
+            document.getElementById('teacher-modal').classList.add('hidden');
+        }
+
+        // Simpan Data Guru Baru
+        function saveTeacher(e) {
+            e.preventDefault();
+            const email = document.getElementById('new-email').value;
+            const name = document.getElementById('new-name').value;
+            const niy = document.getElementById('new-niy').value;
+            const subject = document.getElementById('new-subject').value;
+            const classRoom = document.getElementById('new-class').value;
+
+            db.ref('teachers').push({ email, name, niy, subject, classRoom }, (error) => {
+                if (error) {
+                    alert('Gagal menyimpan data guru.');
+                } else {
+                    closeAddTeacherModal();
+                    document.getElementById('add-teacher-form').reset();
+                    loadAdminData();
+                }
+            });
+        }
+
+        // Load Data Dashboard Admin
+        function loadAdminData() {
+            db.ref('teachers').on('value', snapshot => {
+                const tbody = document.getElementById('admin-teacher-table-body');
+                const badge = document.getElementById('teacher-count-badge');
+                tbody.innerHTML = '';
+                const data = snapshot.val();
+                let i = 1;
+                
+                if (data) {
+                    const keys = Object.keys(data);
+                    badge.innerText = `${keys.length} Guru`;
+                    keys.forEach(key => {
+                        const t = data[key];
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-3 px-4 text-center font-medium text-slate-400">${i++}</td>
+                                <td class="py-3 px-4 font-semibold text-slate-800">${t.name} <br><span class="text-xs font-normal text-slate-400">${t.email || '-'}</span></td>
+                                <td class="py-3 px-4 text-slate-500 font-mono text-xs">${t.niy}</td>
+                                <td class="py-3 px-4"><span class="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">${t.subject}</span></td>
+                                <td class="py-3 px-4 text-slate-600">${t.classRoom}</td>
+                                <td class="py-3 px-4 text-center">
+                                    <button onclick="deleteTeacher('${key}')" class="text-rose-500 hover:text-rose-700 text-xs font-semibold hover:underline">Hapus</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    badge.innerText = `0 Guru`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 italic">Belum ada data guru terdaftar. Silakan tambahkan data guru.</td></tr>`;
+                }
+            });
+
+            // Realtime Monitoring Dokumen
+            db.ref('submissions').on('value', snapshot => {
+                const container = document.getElementById('admin-monitoring-list');
+                container.innerHTML = '';
+                const subs = snapshot.val();
+                if (subs) {
+                    Object.keys(subs).forEach(key => {
+                        const s = subs[key];
+                        container.innerHTML += `
+                            <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+                                <div>
+                                    <span class="font-bold text-slate-800">${s.teacherName}</span> 
+                                    <span class="text-slate-400">(${s.subject})</span> mengunggah: 
+                                    <span class="text-emerald-700 font-semibold">${s.docType}</span> - <i>${s.fileName}</i>
+                                </div>
+                                <span class="text-[11px] text-slate-400 font-mono">${s.date}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = `<p class="text-xs text-slate-400 italic">Belum ada dokumen unggahan dari guru.</p>`;
+                }
+            });
+        }
+
+        function deleteTeacher(key) {
+            if (confirm('Apakah Anda yakin ingin menghapus data guru ini?')) {
+                db.ref('teachers/' + key).remove();
+            }
+        }
+
+        // Fitur Pembuatan Dokumen Otomatis
+        function generateDoc(type) {
+            alert(`Sistem membuat dokumen [${type}] otomatis untuk Mata Pelajaran ${currentUserData.subject} (${currentUserData.classRoom}).`);
+        }
+
+        // Fitur Unggah Dokumen Guru
+        function handleUploadDoc(e) {
+            e.preventDefault();
+            const docType = document.getElementById('doc-type').value;
+            const fileInput = document.getElementById('doc-file');
+            const fileName = fileInput.files[0] ? fileInput.files[0].name : 'Dokumen.pdf';
+
+            const submissionData = {
+                teacherId: currentUserData.id,
+                teacherName: currentUserData.name,
+                subject: currentUserData.subject,
+                docType: docType,
+                fileName: fileName,
+                date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+            };
+
+            db.ref('submissions').push(submissionData, (error) => {
+                if (error) {
+                    alert('Gagal mengunggah dokumen.');
+                } else {
+                    alert('Dokumen berhasil diunggah!');
+                    document.getElementById('upload-form').reset();
+                    loadTeacherSubmissions();
+                }
+            });
+        }
+
+        function loadTeacherSubmissions() {
+            db.ref('submissions').orderByChild('teacherId').equalTo(currentUserData.id).on('value', snapshot => {
+                const listContainer = document.getElementById('teacher-uploaded-list');
+                listContainer.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        const s = data[key];
+                        listContainer.innerHTML += `
+                            <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100 text-xs">
+                                <span class="truncate max-w-[200px]"><i class="fa-solid fa-file-circle-check text-emerald-600 mr-1.5"></i> ${s.docType}</span>
+                                <span class="text-[10px] text-slate-400">${s.date}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    listContainer.innerHTML = `<p class="text-slate-400 italic text-[11px]">Belum ada dokumen terunggah.</p>`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
