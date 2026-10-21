@@ -1,9 +1,0 @@
-{
-  "functions": [{ "source": "functions", "codebase": "default" }],
-  "database": { "rules": "database.rules.json" },
-  "storage": { "rules": "storage.rules" },
-  "hosting": {
-    "public": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "functions/**", "scripts/**", "README.md", "package.json", "package-lock.json", "service-account*.json"]
-  }
-}
