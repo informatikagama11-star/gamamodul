@@ -1,0 +1,6 @@
+{
+  "name": "gama-administrasi-guru-admin-setup",
+  "private": true,
+  "description": "Dependency for the one-time Firebase admin-claim setup script",
+  "dependencies": { "firebase-admin": "^12.7.0" }
+}
